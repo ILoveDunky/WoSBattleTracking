@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>March & Buff Tracker</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --bg: #0b0f14;
+  --panel: #121821;
+  --muted: #9aa8ba; /* slightly lighter for contrast */
+  --text: #e6eef7;
+  --primary: #4f9cff;
+  --primary-600: #2f7de6;
+  --red: #ff5c7a;
+  --border: #263040;
+  --table-stripe: #0f141c;
+  --friendly: #173b2d;
+  --hostile: #3b1717;
+  --warn: #6a5b00;
+  --warn-bg: rgba(106,91,0,0.07);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  background: radial-gradient(1200px 600px at 10% 0%, #111826 0%, #0b0f14 60%);
+  color: var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+.app-header, .app-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.app-footer {
+  border-top: 1px solid var(--border);
+  border-bottom: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.brand { display: flex; gap: 12px; align-items: center; }
+.logo {
+  width: 40px; height: 40px; display: grid; place-items: center;
+  background: linear-gradient(180deg, #1b2532, #0e131b);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 20px;
+}
+.titles h1 { margin: 0; font-size: 20px; font-weight: 700; }
+.titles p { margin: 2px 0 0 0; font-size: 12px; color: var(--muted); }
+
+.container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+
+.panel {
+  background: linear-gradient(180deg, #131a24, #0e141c);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.panel h2 { margin: 4px 0 12px; font-size: 18px; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 12px;
+}
+.form-field { grid-column: span 3; display: flex; flex-direction: column; gap: 6px; }
+.form-field.checkbox-field { justify-content: end; }
+.form-field label { font-size: 13px; color: var(--muted); }
+.form-field input[type="text"],
+.form-field input[type="number"],
+.search input,
+select {
+  background: #0b1118;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 10px 12px;
+  outline: none;
+}
+.form-field small { color: var(--muted); }
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+
+.checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.checkbox input { width: 18px; height: 18px; }
+
+.actions { display: flex; gap: 10px; }
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.search input { width: 280px; }
+.filters select { margin-left: 4px; }
+
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #182231;
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .04s ease, background .2s ease, border-color .2s ease;
+}
+.btn:hover { transform: translateY(-1px); background: #202a3b; }
+.btn:active { transform: translateY(0); }
+.btn.primary { background: var(--primary); color: #0a1017; border-color: transparent; }
+.btn.primary:hover { background: var(--primary-600); color: #0a1017; }
+.btn.danger { background: var(--red); color: #0a1017; border-color: transparent; }
+.btn.ghost { background: transparent; border-color: var(--border); }
+
+.table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #0d131a;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 600;
+}
+.table tbody td {
+  padding: 12px;
+  border-top: 1px solid #0c1118;
+  background: var(--table-stripe);
+  vertical-align: middle;
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: 10px; font-weight: 600;
+  border: 1px solid var(--border);
+}
+.badge.friendly { background: var(--friendly); color: #b2f3d7; border-color: #245642; }
+.badge.hostile { background: var(--hostile); color: #ffb2b2; border-color: #5f2424; }
+.badge.info { background: #152134; color: #b9d8ff; }
+
+.kicker { font-size: 12px; color: var(--muted); }
+
+.status-row.friendly { box-shadow: inset 0 0 0 9999px rgba(28, 65, 52, 0.06); }
+.status-row.hostile  { box-shadow: inset 0 0 0 9999px rgba(65, 28, 28, 0.04); }
+
+.tag {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: #0e141b;
+}
+
+/* cell actions */
+.cell-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.cell-actions .btn { padding: 6px 10px; font-size: 13px; }
+
+/* progress */
+.progress {
+  position: relative;
+  height: 10px;
+  background: #0b1118;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress .bar {
+  position: absolute;
+  height: 100%;
+  left: 0; top: 0;
+  background: linear-gradient(90deg, var(--primary), #6fd1ff);
+  width: 0%;
+  transition: width .3s ease;
+}
+
+/* footer */
+.footer-actions { margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* modal */
+.modal {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--text);
+  background: #121a25;
+  width: min(600px, 90vw);
+}
+.modal::backdrop { background: rgba(0,0,0,0.5); }
+
+/* ending flash */
+.row-ending {
+  animation: endingFlash 1s linear 0s 3;
+  outline: 2px solid rgba(255,255,255,0.06);
+}
+@keyframes endingFlash {
+  0% { box-shadow: 0 0 0 0 rgba(255,200,0,0); }
+  50% { box-shadow: 0 0 18px 4px rgba(255,200,0,0.08); }
+  100% { box-shadow: 0 0 0 0 rgba(255,200,0,0); }
+}
+
+/* warning */
+.status-warn { background: var(--warn-bg) !important; }
+
+/* compact */
+.compact .table tbody td { padding: 6px; }
+.compact .logo { width: 32px; height: 32px; font-size: 16px; border-radius: 8px; }
+
+/* responsive */
+@media (max-width: 900px) {
+  .form-field { grid-column: span 6; }
+}
+@media (max-width: 600px) {
+  .form-field { grid-column: span 12; }
+  .search input { width: 100%; }
+}
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo">⏱️</div>
+      <div class="titles">
+        <h1>March & Buff Tracker</h1>
+        <p>March in seconds, pet buff in minutes — fast, clear, reliable</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="addQuickDemo" class="btn ghost">Demo data</button>
+      <button id="clearAll" class="btn danger">Clear all</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2>Add player</h2>
+      <form id="playerForm" class="form-grid">
+        <div class="form-field">
+          <label for="playerName">Name</label>
+          <input id="playerName" type="text" placeholder="e.g., Raven" required />
+        </div>
+        <div class="form-field">
+          <label for="target">Target / Note</label>
+          <input id="target" type="text" placeholder="e.g., Center tile, Rally" />
+        </div>
+        <div class="form-field">
+          <label for="marchSeconds">March ETA (seconds)</label>
+          <input id="marchSeconds" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g., 45" required />
+          <small class="muted">Total time from now</small>
+        </div>
+        <div class="form-field checkbox-field">
+          <label class="checkbox">
+            <input id="friendly" type="checkbox" />
+            <span>Friendly (my state)</span>
+          </label>
+        </div>
+        <div class="form-field checkbox-field">
+          <label class="checkbox">
+            <input id="petBuffActive" type="checkbox" />
+            <span>Pet buff active</span>
+          </label>
+        </div>
+        <div class="form-field">
+          <label for="petBuffMinutes">Pet buff time left (minutes)</label>
+          <input id="petBuffMinutes" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g., 30" />
+          <small class="muted">Only used if pet buff is active</small>
+        </div>
+
+        <div class="form-field">
+          <label class="checkbox">
+            <input id="startNow" type="checkbox" />
+            <span>Start now (auto start countdown)</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Add player</button>
+          <button type="button" id="startAll" class="btn">Start all countdowns</button>
+          <label style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <span class="muted" style="font-size:13px;">Compact</span>
+            <input id="compactToggle" type="checkbox" />
+          </label>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Players</h2>
+        <div class="toolbar">
+          <div class="search">
+            <input id="searchInput" type="text" placeholder="Search by name or target..." />
+          </div>
+          <div class="filters">
+            <select id="filterFriendly">
+              <option value="all">All</option>
+              <option value="friendly">Friendly only</option>
+              <option value="hostile">Hostile only</option>
+            </select>
+            <select id="sortBy">
+              <option value="timeLeftAsc">Time left ↑</option>
+              <option value="timeLeftDesc">Time left ↓</option>
+              <option value="nameAsc">Name A–Z</option>
+              <option value="nameDesc">Name Z–A</option>
+              <option value="createdDesc">Recent added</option>
+              <option value="createdAsc">Oldest</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" aria-label="Players march table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Target</th>
+              <th>Friendly</th>
+              <th>March</th>
+              <th>Ends</th>
+              <th>Time left</th>
+              <th>Pet buff</th>
+              <th>Buff left</th>
+              <th>Controls</th>
+            </tr>
+          </thead>
+          <tbody id="playersBody"></tbody>
+        </table>
+      </div>
+      <div class="footer-actions">
+        <button id="clearFinished" class="btn">Clear finished marches</button>
+        <button id="exportData" class="btn ghost">Export</button>
+        <button id="importData" class="btn ghost">Import</button>
+        <input id="importFile" type="file" accept=".json" hidden />
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p class="muted">Data is saved locally in your browser. Built for speed during chaotic fights.</p>
+  </footer>
+
+  <dialog id="editDialog" class="modal">
+    <form method="dialog" id="editForm" class="form-grid">
+      <h3>Edit player</h3>
+      <input type="hidden" id="editId" />
+      <div class="form-field">
+        <label for="editName">Name</label>
+        <input id="editName" type="text" required />
+      </div>
+      <div class="form-field">
+        <label for="editTarget">Target / Note</label>
+        <input id="editTarget" type="text" />
+      </div>
+      <div class="form-field">
+        <label for="editFriendly">Friendly</label>
+        <label class="checkbox">
+          <input id="editFriendly" type="checkbox" />
+          <span>Mark as friendly</span>
+        </label>
+      </div>
+      <div class="form-field">
+        <label for="editMarchSeconds">March ETA (seconds)</label>
+        <input id="editMarchSeconds" type="number" inputmode="numeric" min="0" step="1" />
+      </div>
+      <div class="form-field">
+        <label for="editPetActive">Pet buff active</label>
+        <label class="checkbox">
+          <input id="editPetActive" type="checkbox" />
+          <span>Active</span>
+        </label>
+      </div>
+      <div class="form-field">
+        <label for="editPetMinutes">Pet buff time left (minutes)</label>
+        <input id="editPetMinutes" type="number" inputmode="numeric" min="0" step="1" />
+      </div>
+      <div class="form-actions">
+        <button id="editSave" class="btn primary" type="submit">Save</button>
+        <button id="editCancel" class="btn" type="reset">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+<script>
+/*
+  Enhanced March & Buff Tracker
+  - auto-start per player
+  - sound + visual alerts on end
+  - live resorting
+  - backups (3)
+  - dataVersioning
+  - debounce search
+  - rAF tick loop ~1s
+  - crypto.randomUUID fallback
+  - compact view toggle
+  - keyboard shortcuts
+*/
+
+const DATA_KEY = 'march_tracker_data_v1';
+const BACKUP_PREFIX = 'march_tracker_backup_'; // we'll keep 3 rotating
+const DATA_VERSION = 1;
+
+const ALERT_CONFIG = {
+  marchWarnSeconds: 15,    // mark as warning if march < this
+  buffWarnSeconds: 60,     // mark as warning if buff < this
+  beepEnabled: true,
+};
+
+const state = {
+  players: [],
+  timers: {
+    rafId: null,
+    lastTick: 0,
+  },
+};
+
+// ---- elements ----
+const els = {
+  playerForm: document.getElementById('playerForm'),
+  playerName: document.getElementById('playerName'),
+  target: document.getElementById('target'),
+  marchSeconds: document.getElementById('marchSeconds'),
+  friendly: document.getElementById('friendly'),
+  petBuffActive: document.getElementById('petBuffActive'),
+  petBuffMinutes: document.getElementById('petBuffMinutes'),
+  startNow: document.getElementById('startNow'),
+  compactToggle: document.getElementById('compactToggle'),
+
+  startAll: document.getElementById('startAll'),
+  clearAll: document.getElementById('clearAll'),
+  clearFinished: document.getElementById('clearFinished'),
+  addQuickDemo: document.getElementById('addQuickDemo'),
+
+  searchInput: document.getElementById('searchInput'),
+  filterFriendly: document.getElementById('filterFriendly'),
+  sortBy: document.getElementById('sortBy'),
+
+  playersBody: document.getElementById('playersBody'),
+
+  exportData: document.getElementById('exportData'),
+  importData: document.getElementById('importData'),
+  importFile: document.getElementById('importFile'),
+
+  editDialog: document.getElementById('editDialog'),
+  editForm: document.getElementById('editForm'),
+  editId: document.getElementById('editId'),
+  editName: document.getElementById('editName'),
+  editTarget: document.getElementById('editTarget'),
+  editFriendly: document.getElementById('editFriendly'),
+  editMarchSeconds: document.getElementById('editMarchSeconds'),
+  editPetActive: document.getElementById('editPetActive'),
+  editPetMinutes: document.getElementById('editPetMinutes'),
+  editSave: document.getElementById('editSave'),
+  editCancel: document.getElementById('editCancel'),
+};
+
+// ---- util ----
+const uid = () => (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2,9);
+const now = () => Date.now();
+const secToMs = (s) => Math.max(0, Number(s || 0)) * 1000;
+const minToMs = (m) => Math.max(0, Number(m || 0)) * 60_000;
+const clamp = (v, minV, maxV) => Math.min(Math.max(v, minV), maxV);
+
+function formatDuration(ms) {
+  if (ms == null) return '—';
+  if (ms <= 0) return '0s';
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${m}m ${sec}s`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+function formatTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ---- storage with backups ----
+function save() {
+  const payload = {
+    version: DATA_VERSION,
+    savedAt: now(),
+    players: state.players,
+  };
+  try {
+    localStorage.setItem(DATA_KEY, JSON.stringify(payload));
+    saveBackup(payload);
+  } catch (err) {
+    console.error('Save failed', err);
+  }
+}
+
+function load() {
+  const raw = localStorage.getItem(DATA_KEY);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.players && Array.isArray(parsed.players)) {
+      state.players = parsed.players;
+    }
+  } catch (err) {
+    console.warn('Could not parse saved data', err);
+  }
+}
+
+function saveBackup(payload) {
+  try {
+    // rotate three backups: 1,2,3 -> push new to slot1 and push older down
+    const b1 = localStorage.getItem(BACKUP_PREFIX + '1');
+    const b2 = localStorage.getItem(BACKUP_PREFIX + '2');
+    if (b2) localStorage.setItem(BACKUP_PREFIX + '3', b2);
+    if (b1) localStorage.setItem(BACKUP_PREFIX + '2', b1);
+    localStorage.setItem(BACKUP_PREFIX + '1', JSON.stringify(payload));
+  } catch (e) {
+    // best-effort
+    console.warn('Backup failed', e);
+  }
+}
+
+// ---- data operations ----
+function addPlayer(p) {
+  state.players.push(p);
+  save();
+  render();
+}
+function updatePlayer(id, patch) {
+  const i = state.players.findIndex(x => x.id === id);
+  if (i === -1) return;
+  state.players[i] = { ...state.players[i], ...patch };
+  save();
+  render();
+}
+function removePlayer(id) {
+  state.players = state.players.filter(p => p.id !== id);
+  save();
+  render();
+}
+
+function clearFinished() {
+  const t = now();
+  const before = state.players.length;
+  state.players = state.players.filter(p => {
+    const marchLeft = (p.marchEnd || 0) - t;
+    const buffLeft = p.petBuffActive ? (p.petBuffEnd || 0) - t : 1;
+    return marchLeft > 0 || buffLeft > 0;
+  });
+  if (state.players.length !== before) {
+    save();
+    render();
+  }
+}
+
+function startAllCountdowns() {
+  const curr = now();
+  state.players = state.players.map(p => {
+    const marchMs = secToMs(p.marchEtaSec);
+    const buffMs = minToMs(p.petBuffMinutes);
+    return {
+      ...p,
+      marchStart: marchMs ? curr : null,
+      marchEnd: marchMs ? curr + marchMs : null,
+      petBuffActive: p.petBuffActive,
+      petBuffStart: p.petBuffActive && buffMs ? curr : null,
+      petBuffEnd: p.petBuffActive && buffMs ? curr + buffMs : null,
+      notified: false,
+      buffNotified: false,
+    };
+  });
+  save(); render();
+}
+
+function startMarch(id) {
+  const p = state.players.find(x => x.id === id);
+  if (!p) return;
+  const ts = now();
+  const ms = secToMs(p.marchEtaSec);
+  updatePlayer(id, { marchStart: ms ? ts : null, marchEnd: ms ? ts + ms : null, notified: false });
+}
+function stopMarch(id) { updatePlayer(id, { marchStart: null, marchEnd: null, notified: false }); }
+
+function startBuff(id) {
+  const p = state.players.find(x => x.id === id);
+  if (!p) return;
+  const ts = now();
+  const ms = minToMs(p.petBuffMinutes);
+  updatePlayer(id, {
+    petBuffActive: true,
+    petBuffStart: ms ? ts : null,
+    petBuffEnd: ms ? ts + ms : null,
+    buffNotified: false,
+  });
+}
+function stopBuff(id) { updatePlayer(id, { petBuffActive: false, petBuffStart: null, petBuffEnd: null, buffNotified: false }); }
+
+// ---- audio alert ----
+let audioCtx = null;
+function beep(duration = 150, freq = 880, vol = 0.08) {
+  if (!ALERT_CONFIG.beepEnabled) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.value = vol;
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start();
+    setTimeout(() => { o.stop(); }, duration);
+  } catch (e) {
+    // fallback silent
+    console.warn('Beep failed', e);
+  }
+}
+
+// ---- render ----
+function render() {
+  const q = (els.searchInput.value || '').toLowerCase();
+  const friendlyFilter = els.filterFriendly.value;
+  let rows = [...state.players];
+
+  // update dynamic fields
+  const t = now();
+  rows = rows.map(p => {
+    const marchLeft = p.marchEnd ? Math.max(0, p.marchEnd - t) : null;
+    const buffLeft = p.petBuffActive && p.petBuffEnd ? Math.max(0, p.petBuffEnd - t) : null;
+    const marchTotal = secToMs(p.marchEtaSec);
+    const marchPct = marchLeft == null || marchTotal === 0 ? 0 : clamp(((marchTotal - marchLeft) / marchTotal) * 100, 0, 100);
+    const buffTotal = minToMs(p.petBuffMinutes);
+    const buffPct = !p.petBuffActive || buffLeft == null || buffTotal === 0 ? 0 : clamp(((buffTotal - buffLeft) / buffTotal) * 100, 0, 100);
+    return { ...p, marchLeft, buffLeft, marchPct, buffPct };
+  });
+
+  // filter
+  rows = rows.filter(p => {
+    const matchesQuery = p.name.toLowerCase().includes(q) || (p.target || '').toLowerCase().includes(q);
+    const matchesFriendly =
+      friendlyFilter === 'all' ||
+      (friendlyFilter === 'friendly' && !!p.friendly) ||
+      (friendlyFilter === 'hostile' && !p.friendly);
+    return matchesQuery && matchesFriendly;
+  });
+
+  // sort (live)
+  const sortBy = els.sortBy.value;
+  rows.sort((a, b) => {
+    switch (sortBy) {
+      case 'timeLeftAsc': return (a.marchLeft ?? Infinity) - (b.marchLeft ?? Infinity);
+      case 'timeLeftDesc': return (b.marchLeft ?? Infinity) - (a.marchLeft ?? Infinity);
+      case 'nameAsc': return a.name.localeCompare(b.name);
+      case 'nameDesc': return b.name.localeCompare(a.name);
+      case 'createdDesc': return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+      case 'createdAsc': return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+      default: return 0;
+    }
+  });
+
+  // notifications & visuals: if a march or buff completed now and wasn't notified, beep + flash
+  rows.forEach(p => {
+    // march completion
+    if ((p.marchLeft === 0) && !p.notified) {
+      // mark notified in state.players
+      const idx = state.players.findIndex(x => x.id === p.id);
+      if (idx !== -1) {
+        state.players[idx].notified = true;
+        // sound + flash
+        flashRowOnce(p.id);
+        beep(220, 660);
+      }
+    }
+    // buff completion
+    if ((p.buffLeft === 0) && !p.buffNotified) {
+      const idx = state.players.findIndex(x => x.id === p.id);
+      if (idx !== -1) {
+        state.players[idx].buffNotified = true;
+        flashRowOnce(p.id);
+        beep(140, 1100);
+      }
+    }
+  });
+
+  // update saved players with notified changes (if any)
+  save();
+
+  // build HTML
+  els.playersBody.innerHTML = rows.map(rowHtml).join('');
+}
+
+// Helper to add a visual flash to a row element (one-shot)
+function flashRowOnce(id) {
+  // nearest row will be replaced on next render; instead, add a short-lived class via querySelector after a small timeout
+  requestAnimationFrame(() => {
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    if (tr) {
+      tr.classList.add('row-ending');
+      setTimeout(() => tr.classList.remove('row-ending'), 3200);
+    }
+  });
+}
+
+function rowHtml(p) {
+  const friendlyBadge = `<span class="badge ${p.friendly ? 'friendly' : 'hostile'}">${p.friendly ? 'Friendly' : 'Hostile'}</span>`;
+  const marchInfo = `
+    <div class="kicker">ETA: ${p.marchEtaSec} sec</div>
+    <div class="progress"><div class="bar" style="width:${p.marchPct || 0}%;"></div></div>
+  `;
+  const petInfo = p.petBuffActive ? `<span class="badge info">Active</span>` : `<span class="tag">Inactive</span>`;
+  const marchEnds = p.marchEnd ? formatTime(p.marchEnd) : '—';
+  const marchLeft = p.marchLeft != null ? formatDuration(p.marchLeft) : '—';
+  const buffLeftStr = p.petBuffActive ? (p.buffLeft != null ? formatDuration(p.buffLeft) : '—') : '—';
+
+  // warning flags
+  const marchWarn = (p.marchLeft != null && p.marchLeft <= ALERT_CONFIG.marchWarnSeconds * 1000 && p.marchLeft > 0);
+  const buffWarn = (p.buffLeft != null && p.buffLeft <= ALERT_CONFIG.buffWarnSeconds * 1000 && p.buffLeft > 0);
+
+  const trClass = `status-row ${p.friendly ? 'friendly' : 'hostile'}${(marchWarn || buffWarn) ? ' status-warn' : ''}`;
+  const trData = `data-id="${p.id}"`;
+
+  return `
+  <tr class="${trClass}" ${trData}>
+    <td>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <strong>${escapeHtml(p.name)}</strong>
+      </div>
+      <div class="kicker">Added: ${new Date(p.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+    </td>
+    <td>${escapeHtml(p.target || '—')}</td>
+    <td>${friendlyBadge}</td>
+    <td>${marchInfo}</td>
+    <td>${marchEnds}</td>
+    <td>${marchLeft}</td>
+    <td>${petInfo}</td>
+    <td>
+      ${p.petBuffActive ? `
+        <div class="kicker">Est: ${p.petBuffMinutes} min</div>
+        <div class="progress"><div class="bar" style="width:${p.buffPct || 0}%;"></div></div>
+        <div class="kicker" style="margin-top:6px;">Left: ${buffLeftStr}</div>
+      ` : `
+        <div class="kicker">Est: ${p.petBuffMinutes || 0} min</div>
+      `}
+    </td>
+    <td>
+      <div class="cell-actions">
+        ${p.marchEnd ? `
+          <button class="btn" data-action="stop-march" data-id="${p.id}">Stop march</button>
+        ` : `
+          <button class="btn primary" data-action="start-march" data-id="${p.id}">Start march</button>
+        `}
+        ${p.petBuffActive ? `
+          <button class="btn" data-action="stop-buff" data-id="${p.id}">Stop buff</button>
+        ` : `
+          <button class="btn" data-action="start-buff" data-id="${p.id}">Start buff</button>
+        `}
+        <button class="btn" data-action="edit" data-id="${p.id}">Edit</button>
+        <button class="btn danger" data-action="remove" data-id="${p.id}">Remove</button>
+      </div>
+    </td>
+  </tr>
+  `;
+}
+
+// small helper escape to avoid injection inside names/targets
+function escapeHtml(s) {
+  if (!s) return s;
+  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
+}
+
+// ---- events ----
+function initEvents() {
+  els.playerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = els.playerName.value.trim();
+    const target = els.target.value.trim();
+    const marchEtaSec = Number(els.marchSeconds.value);
+    const friendly = els.friendly.checked;
+    const petBuffActive = els.petBuffActive.checked;
+    const petBuffMinutes = Number(els.petBuffMinutes.value || 0);
+    const startNow = els.startNow.checked;
+
+    if (!name || isNaN(marchEtaSec) || marchEtaSec < 0) {
+      alert('Please provide a valid name and march ETA (seconds).');
+      return;
+    }
+    if (petBuffActive && (isNaN(petBuffMinutes) || petBuffMinutes <= 0)) {
+      alert('Please provide a valid pet buff time left (minutes).');
+      return;
+    }
+
+    const player = {
+      id: uid(),
+      createdAt: now(),
+      name,
+      target,
+      friendly,
+      marchEtaSec,
+      marchStart: null,
+      marchEnd: null,
+      petBuffActive,
+      petBuffMinutes,
+      petBuffStart: null,
+      petBuffEnd: null,
+      notified: false,
+      buffNotified: false,
+    };
+
+    // if startNow, set start times relative to now
+    if (startNow) {
+      const ts = now();
+      const mMs = secToMs(player.marchEtaSec);
+      const bMs = minToMs(player.petBuffMinutes);
+      player.marchStart = mMs ? ts : null;
+      player.marchEnd = mMs ? ts + mMs : null;
+      player.petBuffStart = petBuffActive && bMs ? ts : null;
+      player.petBuffEnd = petBuffActive && bMs ? ts + bMs : null;
+    }
+
+    addPlayer(player);
+    els.playerForm.reset();
+  });
+
+  els.playersBody.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.getAttribute('data-id');
+    const action = btn.getAttribute('data-action');
+    switch (action) {
+      case 'start-march': startMarch(id); break;
+      case 'stop-march': stopMarch(id); break;
+      case 'start-buff': startBuff(id); break;
+      case 'stop-buff': stopBuff(id); break;
+      case 'edit': openEdit(id); break;
+      case 'remove': removePlayer(id); break;
+      default: break;
+    }
+  });
+
+  // debounce inputs
+  const debouncedRender = debounce(render, 250);
+  ['input', 'change'].forEach(ev => {
+    els.searchInput.addEventListener(ev, debouncedRender);
+    els.filterFriendly.addEventListener(ev, render);
+    els.sortBy.addEventListener(ev, render);
+  });
+
+  els.clearFinished.addEventListener('click', clearFinished);
+  els.startAll.addEventListener('click', startAllCountdowns);
+
+  els.clearAll.addEventListener('click', () => {
+    if (confirm('Clear all players?')) {
+      state.players = [];
+      save(); render();
+    }
+  });
+
+  els.addQuickDemo.addEventListener('click', () => {
+    const demo = [
+      { name: 'Raven', target: 'Center tile', friendly: true, marchEtaSec: 45, petBuffActive: true, petBuffMinutes: 25 },
+      { name: 'Warlord', target: 'North rally', friendly: false, marchEtaSec: 20, petBuffActive: false, petBuffMinutes: 0 },
+      { name: 'Echo', target: 'Scout', friendly: true, marchEtaSec: 12, petBuffActive: true, petBuffMinutes: 10 },
+    ];
+    demo.forEach(d => addPlayer({
+      id: uid(),
+      createdAt: now(),
+      ...d,
+      marchStart: null, marchEnd: null,
+      petBuffStart: null, petBuffEnd: null,
+      notified: false,
+      buffNotified: false,
+    }));
+  });
+
+  els.exportData.addEventListener('click', exportData);
+  els.importData.addEventListener('click', () => els.importFile.click());
+  els.importFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) importData(file);
+    e.target.value = '';
+  });
+
+  els.editCancel.addEventListener('click', () => els.editDialog.close());
+  els.editForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = els.editId.value;
+    const patch = {
+      name: els.editName.value.trim(),
+      target: els.editTarget.value.trim(),
+      friendly: els.editFriendly.checked,
+      marchEtaSec: Number(els.editMarchSeconds.value || 0),
+      petBuffActive: els.editPetActive.checked,
+      petBuffMinutes: Number(els.editPetMinutes.value || 0),
+      notified: false,
+      buffNotified: false,
+    };
+    updatePlayer(id, patch);
+    els.editDialog.close();
+  });
+
+  // compact toggle
+  els.compactToggle.addEventListener('change', (e) => {
+    document.body.classList.toggle('compact', e.target.checked);
+  });
+
+  // visibility change: force render to correct timers when tab resumes
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      // Force immediate render to correct for tab sleep drift.
+      render();
+    }
+  });
+
+  // keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === '/') {
+      e.preventDefault();
+      els.searchInput.focus();
+      return;
+    }
+    if (e.key.toLowerCase() === 's') { startAllCountdowns(); return; }
+    if (e.key.toLowerCase() === 'c') { clearFinished(); return; }
+  });
+}
+
+// ---- edit dialog ----
+function openEdit(id) {
+  const p = state.players.find(x => x.id === id);
+  if (!p) return;
+  els.editId.value = p.id;
+  els.editName.value = p.name;
+  els.editTarget.value = p.target || '';
+  els.editFriendly.checked = !!p.friendly;
+  els.editMarchSeconds.value = Number(p.marchEtaSec || 0);
+  els.editPetActive.checked = !!p.petBuffActive;
+  els.editPetMinutes.value = Number(p.petBuffMinutes || 0);
+  els.editDialog.showModal();
+}
+
+// ---- import/export ----
+function exportData() {
+  const blob = new Blob([JSON.stringify({ version: DATA_VERSION, exportedAt: now(), players: state.players }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `march-tracker-${new Date().toISOString().slice(0,19)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (parsed?.players && Array.isArray(parsed.players)) {
+        state.players = parsed.players.map(p => ({
+          ...p,
+          notified: false,
+          buffNotified: false,
+        }));
+        save(); render();
+      } else if (Array.isArray(parsed)) {
+        // old format: treat top-level array as players
+        state.players = parsed.map(p => ({ ...p, notified: false, buffNotified: false }));
+        save(); render();
+      } else {
+        alert('Invalid file format.');
+      }
+    } catch (err) {
+      alert('Could not parse JSON.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ---- tick loop (rAF throttled ~1s) ----
+function tickLoop(ts) {
+  const last = state.timers.lastTick || 0;
+  if (!last) {
+    state.timers.lastTick = ts;
+  }
+  const elapsed = ts - state.timers.lastTick;
+  if (elapsed >= 900) { // ~once per second (slightly flexible)
+    render();
+    state.timers.lastTick = ts;
+  }
+  state.timers.rafId = requestAnimationFrame(tickLoop);
+}
+
+function startTickers() {
+  if (!state.timers.rafId) state.timers.rafId = requestAnimationFrame(tickLoop);
+}
+
+// ---- helpers ----
+function debounce(fn, ms = 200) {
+  let id = null;
+  return (...args) => {
+    if (id) clearTimeout(id);
+    id = setTimeout(() => { id = null; fn(...args); }, ms);
+  };
+}
+
+// ---- init ----
+function init() {
+  load();
+  initEvents();
+  startTickers();
+  render();
+}
+document.addEventListener('DOMContentLoaded', init);
+
+// expose some convenience debug APIs in console
+window.__marchTracker = {
+  state,
+  save,
+  load,
+  beep,
+};
+
+</script>
+</body>
+</html>
