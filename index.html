@@ -237,6 +237,11 @@ select {
   .form-field { grid-column: span 12; }
   .search input { width: 100%; }
 }
+
+/* small helper for rally inputs */
+.rally-row { padding: 8px 0; align-items: center; }
+.rally-row select, .rally-row input { background: #0b1118; border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px; }
+.rally-controls { display:flex; gap:8px; align-items:center; }
 </style>
 </head>
 <body>
@@ -357,6 +362,93 @@ select {
         <input id="importFile" type="file" accept=".json" hidden />
       </div>
     </section>
+
+    <!-- NEW: Rally Sync Calculators -->
+    <section class="panel" aria-label="Rally calculators">
+      <div class="panel-head">
+        <h2>Rally Sync Calculators</h2>
+        <div class="toolbar">
+          <div class="kicker">Auto-fill march times from your players. Up to 10 rallies each.</div>
+        </div>
+      </div>
+
+      <!-- Same-Time Rally Calculator -->
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="form-field" style="grid-column: span 12;">
+          <h3>🎯 Same-Time Rally Calculator</h3>
+          <p class="kicker">Enter each rally: pick a player (auto-fills march), enter time left before their rally departs (s). Calculator finds a target hit time (the latest current hit) and shows when each player should call (delay or already late).</p>
+        </div>
+
+        <div id="sameTimeInputs" style="grid-column: span 12; display: grid; gap: 8px;"></div>
+
+        <div class="form-actions" style="grid-column: span 12;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button type="button" id="addRallySameTime" class="btn">+ Add Rally (max 10)</button>
+            <button type="button" id="clearSameTime" class="btn">Clear</button>
+            <button type="button" id="calcSameTime" class="btn primary">Calculate</button>
+          </div>
+          <div style="margin-left:auto">
+            <span class="kicker">Now: <span id="nowClockSame">—</span></span>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="grid-column: span 12; margin-top:6px;">
+          <table class="table" id="sameTimeTable">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>March (s)</th>
+                <th>Current depart in (s)</th>
+                <th>Current expected hit</th>
+                <th>Required depart in (s)</th>
+                <th>Call (in) / Note</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <hr style="margin:18px 0; border:1px solid var(--border);">
+
+      <!-- Rally Gap Calculator -->
+      <div class="form-grid">
+        <div class="form-field" style="grid-column: span 12;">
+          <h3>⏳ Rally Gap Calculator</h3>
+          <p class="kicker">Pick players (auto-fill march) and their time-left-to-depart (s). Calculator shows expected hit times and gap from fastest hit.</p>
+        </div>
+
+        <div id="gapInputs" style="grid-column: span 12; display: grid; gap: 8px;"></div>
+
+        <div class="form-actions" style="grid-column: span 12;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button type="button" id="addRallyGap" class="btn">+ Add Rally (max 10)</button>
+            <button type="button" id="clearGap" class="btn">Clear</button>
+            <button type="button" id="calcGap" class="btn primary">Calculate</button>
+          </div>
+          <div style="margin-left:auto">
+            <span class="kicker">Now: <span id="nowClockGap">—</span></span>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="grid-column: span 12; margin-top:6px;">
+          <table class="table" id="gapTable">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>March (s)</th>
+                <th>Depart in (s)</th>
+                <th>Expected hit (s from now)</th>
+                <th>Gap from fastest (s)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <!-- END calculators -->
+
   </main>
 
   <footer class="app-footer">
@@ -407,16 +499,9 @@ select {
 <script>
 /*
   Enhanced March & Buff Tracker
-  - auto-start per player
-  - sound + visual alerts on end
-  - live resorting
-  - backups (3)
-  - dataVersioning
-  - debounce search
-  - rAF tick loop ~1s
-  - crypto.randomUUID fallback
-  - compact view toggle
-  - keyboard shortcuts
+  - original functionality preserved
+  - added Rally calculators (Same-Time + Gap) with auto-fill from players
+  - keep all UI/visuals and behaviors
 */
 
 const DATA_KEY = 'march_tracker_data_v1';
@@ -475,6 +560,21 @@ const els = {
   editPetMinutes: document.getElementById('editPetMinutes'),
   editSave: document.getElementById('editSave'),
   editCancel: document.getElementById('editCancel'),
+
+  // calculators
+  sameTimeInputs: document.getElementById('sameTimeInputs'),
+  addRallySameTime: document.getElementById('addRallySameTime'),
+  calcSameTime: document.getElementById('calcSameTime'),
+  sameTimeTable: document.getElementById('sameTimeTable'),
+  nowClockSame: document.getElementById('nowClockSame'),
+  clearSameTime: document.getElementById('clearSameTime'),
+
+  gapInputs: document.getElementById('gapInputs'),
+  addRallyGap: document.getElementById('addRallyGap'),
+  calcGap: document.getElementById('calcGap'),
+  gapTable: document.getElementById('gapTable'),
+  nowClockGap: document.getElementById('nowClockGap'),
+  clearGap: document.getElementById('clearGap'),
 };
 
 // ---- util ----
@@ -709,6 +809,15 @@ function render() {
 
   // build HTML
   els.playersBody.innerHTML = rows.map(rowHtml).join('');
+
+  // update calculators' clocks
+  const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if (els.nowClockSame) els.nowClockSame.textContent = nowStr;
+  if (els.nowClockGap) els.nowClockGap.textContent = nowStr;
+
+  // update player dropdowns options (only for newly-created inputs)
+  // we don't force-rewrite existing select values to avoid disrupting user input.
+  updateCachedOptions();
 }
 
 // Helper to add a visual flash to a row element (one-shot)
@@ -789,6 +898,156 @@ function escapeHtml(s) {
   if (!s) return s;
   return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
 }
+
+// ---- calculators utilities ----
+
+// Build option HTML for selects (value=player.id)
+function buildPlayerOptionsHtml() {
+  if (!state.players || !state.players.length) return `<option value="">— no players —</option>`;
+  return `<option value="">(choose)</option>` + state.players.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${p.marchEtaSec}s)</option>`).join('');
+}
+
+// Function to add a new input row (shared)
+function createRallyInputRow(container, type) {
+  const current = container.querySelectorAll('.rally-row').length;
+  if (current >= 10) {
+    alert('Max 10 rallies allowed.');
+    return;
+  }
+
+  const row = document.createElement('div');
+  row.className = 'rally-row';
+  row.style.gridTemplateColumns = '1fr 120px 120px 48px';
+  row.style.display = 'grid';
+  row.style.alignItems = 'center';
+  row.style.gap = '8px';
+
+  // select (player id), march input (s) and left input (s)
+  row.innerHTML = `
+    <select class="rallyName">${buildPlayerOptionsHtml()}</select>
+    <input class="rallyMarch" type="number" placeholder="march (s)" min="0" />
+    <input class="rallyLeft" type="number" placeholder="depart in (s)" min="0" />
+    <div class="rally-controls"><button class="btn danger removeRow">✕</button></div>
+  `;
+
+  // remove button
+  row.querySelector('.removeRow').addEventListener('click', () => row.remove());
+  // when player selected, auto-fill march value
+  row.querySelector('.rallyName').addEventListener('change', (ev) => {
+    const pid = ev.target.value;
+    const marchInput = row.querySelector('.rallyMarch');
+    if (!pid) return; // empty
+    const p = state.players.find(x => x.id === pid);
+    if (p) marchInput.value = Number(p.marchEtaSec || 0);
+  });
+
+  container.appendChild(row);
+  return row;
+}
+
+// update options for any new selects created after player changes
+function updateCachedOptions() {
+  // Only update selects that have no value selected or have the placeholder — do not override user choice
+  const optsHtml = buildPlayerOptionsHtml();
+  [...document.querySelectorAll('#sameTimeInputs .rally-row select, #gapInputs .rally-row select')].forEach(sel => {
+    const cur = sel.value;
+    // If current value matches a player id, keep it; otherwise refresh options while keeping value
+    sel.innerHTML = optsHtml;
+    if (cur) sel.value = cur;
+  });
+}
+
+// ---- calculators: actions and calculations ----
+
+function clearContainer(container) {
+  container.innerHTML = '';
+}
+
+// Same-Time calculator behavior
+els.addRallySameTime.addEventListener('click', () => createRallyInputRow(els.sameTimeInputs, 'same'));
+els.clearSameTime.addEventListener('click', () => {
+  clearContainer(els.sameTimeInputs);
+  els.sameTimeTable.querySelector('tbody').innerHTML = '';
+});
+els.calcSameTime.addEventListener('click', () => {
+  const rows = [...els.sameTimeInputs.querySelectorAll('.rally-row')];
+  if (rows.length < 1) return alert('Add at least one rally.');
+
+  const nowTs = now();
+  // gather data
+  const items = rows.map(r => {
+    const pid = r.querySelector('.rallyName').value;
+    const march = Number(r.querySelector('.rallyMarch').value || 0);
+    const left = Number(r.querySelector('.rallyLeft').value || 0);
+    const name = pid ? (state.players.find(p => p.id === pid)?.name ?? '(unknown)') : '(manual)';
+    return { pid, name, march, left };
+  });
+
+  // current expected hits (from now): now + left + march
+  const hits = items.map(it => ({ ...it, hitAt: nowTs + secToMs(it.left + it.march) }));
+
+  // target hit time is max of hits (so others delay to match)
+  const targetHit = Math.max(...hits.map(h => h.hitAt));
+
+  // compute required depart-in (seconds from now) so hit equals targetHit:
+  // requiredLeft = (targetHit - now) - march
+  const tbody = els.sameTimeTable.querySelector('tbody');
+  tbody.innerHTML = hits.map(h => {
+    const requiredLeftSec = Math.max(0, Math.round((targetHit - nowTs) / 1000) - Number(h.march));
+    const callDiff = requiredLeftSec - Number(h.left); // positive -> call later by Xs; negative -> already late by |X|s
+    const note = callDiff >= 0 ? `Call in ${callDiff}s` : `Already late by ${Math.abs(callDiff)}s`;
+    const requiredDepartAt = new Date(nowTs + requiredLeftSec * 1000).toLocaleTimeString();
+    const expectedHitTime = new Date(nowTs + (Number(h.left) + Number(h.march)) * 1000).toLocaleTimeString();
+    return `
+      <tr>
+        <td>${escapeHtml(h.name)}</td>
+        <td>${Number(h.march)}s</td>
+        <td>${Number(h.left)}s</td>
+        <td>${expectedHitTime}</td>
+        <td>${requiredLeftSec}s (${requiredDepartAt})</td>
+        <td>${note}</td>
+      </tr>
+    `;
+  }).join('');
+});
+
+// Gap calculator behavior
+els.addRallyGap.addEventListener('click', () => createRallyInputRow(els.gapInputs, 'gap'));
+els.clearGap.addEventListener('click', () => {
+  clearContainer(els.gapInputs);
+  els.gapTable.querySelector('tbody').innerHTML = '';
+});
+els.calcGap.addEventListener('click', () => {
+  const rows = [...els.gapInputs.querySelectorAll('.rally-row')];
+  if (rows.length < 1) return alert('Add at least one rally.');
+
+  const nowTs = now();
+  const items = rows.map(r => {
+    const pid = r.querySelector('.rallyName').value;
+    const march = Number(r.querySelector('.rallyMarch').value || 0);
+    const left = Number(r.querySelector('.rallyLeft').value || 0);
+    const name = pid ? (state.players.find(p => p.id === pid)?.name ?? '(unknown)') : '(manual)';
+    const hitFromNowSec = march + left;
+    return { pid, name, march, left, hitFromNowSec, hitAtTs: nowTs + secToMs(march + left) };
+  });
+
+  const minHit = Math.min(...items.map(i => i.hitFromNowSec));
+  const tbody = els.gapTable.querySelector('tbody');
+  tbody.innerHTML = items.map(it => {
+    return `
+      <tr>
+        <td>${escapeHtml(it.name)}</td>
+        <td>${it.march}s</td>
+        <td>${it.left}s</td>
+        <td>${Math.round(it.hitFromNowSec)}s (${new Date(it.hitAtTs).toLocaleTimeString()})</td>
+        <td>${(it.hitFromNowSec - minHit).toFixed(1)}s</td>
+      </tr>
+    `;
+  }).join('');
+});
+
+// Add initial empty row for convenience
+// (not automatically — user can click + to add)
 
 // ---- events ----
 function initEvents() {
@@ -892,6 +1151,10 @@ function initEvents() {
       notified: false,
       buffNotified: false,
     }));
+
+    // add one example rally row to calculators so user can see behavior immediately
+    if (!els.sameTimeInputs.querySelector('.rally-row')) createRallyInputRow(els.sameTimeInputs, 'same');
+    if (!els.gapInputs.querySelector('.rally-row')) createRallyInputRow(els.gapInputs, 'gap');
   });
 
   els.exportData.addEventListener('click', exportData);
@@ -1039,6 +1302,11 @@ window.__marchTracker = {
   load,
   beep,
 };
+
+// extra helper: create initial blank rows in calculators for convenience
+// (uncomment if desired):
+// createRallyInputRow(els.sameTimeInputs, 'same');
+// createRallyInputRow(els.gapInputs, 'gap');
 
 </script>
 </body>
